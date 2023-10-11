@@ -1,7 +1,10 @@
 package com.hodolog.api.config;
 
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+
+import java.util.Collection;
 import java.util.List;
 
 public class UserPrincipal extends User {
@@ -10,6 +13,13 @@ public class UserPrincipal extends User {
 
     // role: 역할 -> 관리자, 사용자, 매니저
     // authority: 권한 -> 글쓰기, 글 읽기, 사용자정지시키기
+
+
+    public UserPrincipal(String username, String password, Collection<? extends GrantedAuthority> authorities, Long userId) {
+        super(username, password, authorities);
+        this.userId = userId;
+    }
+    //super을 통해 username, password, authorities를 넘긴다.
 
     public UserPrincipal(com.hodolog.api.domain.User user) {
         super(user.getEmail(), user.getPassword(),

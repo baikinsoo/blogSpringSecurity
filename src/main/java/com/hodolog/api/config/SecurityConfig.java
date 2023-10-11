@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.annotation.web.configurers.RememberMeConfigurer;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -34,7 +35,7 @@ import static org.springframework.boot.autoconfigure.security.servlet.PathReques
 public class SecurityConfig {
 
     @Bean
-    public WebSecurityCustomizer webSecurityCustomizer(HandlerMappingIntrospector introspector) {
+    public WebSecurityCustomizer webSecurityCustomizer() {
         return new WebSecurityCustomizer() {
             @Override
             public void customize(WebSecurity web) {
@@ -78,9 +79,14 @@ public class SecurityConfig {
                     .defaultSuccessUrl("/")
                 //성공한 뒤 이동하는 페이지
                 .and()
-                .rememberMe(rm->rm.rememberMeParameter("remember")
-                                .alwaysRemember(false)
-                                .tokenValiditySeconds(2592000)
+                .rememberMe(new Customizer<RememberMeConfigurer<HttpSecurity>>() {
+                                @Override
+                                public void customize(RememberMeConfigurer<HttpSecurity> rm) {
+                                    rm.rememberMeParameter("remember")
+                                            .alwaysRemember(false)
+                                            .tokenValiditySeconds(2592000);
+                                }
+                            }
                         )
                 //로그인 기억하기 위한 메서드
 //                .userDetailsService(userDetailsService())
@@ -121,7 +127,6 @@ public class SecurityConfig {
                 64
         );
     }
-
 
 //    @Bean
 //    public SecurityFilterChain securityFilterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception{
