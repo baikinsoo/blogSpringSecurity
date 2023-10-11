@@ -9,13 +9,5 @@ import java.util.Base64;
 @ConfigurationProperties(prefix = "hodolman")
 public class AppConfig {
 
-    private byte[] jwtKey;
-
-    public void setJwtKey(String jwtKey) {
-        this.jwtKey = Base64.getDecoder().decode(jwtKey);
-    }
-
-    public byte[] getJwtKey() {
-        return jwtKey;
-    }
+    public String jwtKey;
 }
