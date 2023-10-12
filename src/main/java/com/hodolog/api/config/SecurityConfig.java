@@ -1,11 +1,21 @@
 package com.hodolog.api.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hodolog.api.config.handler.Http401Handler;
+import com.hodolog.api.config.handler.Http403Handler;
+import com.hodolog.api.config.handler.LoginFailHandler;
 import com.hodolog.api.domain.User;
 import com.hodolog.api.repository.UserRepository;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cglib.proxy.NoOp;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -22,17 +32,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
+import java.io.IOException;
+
 import static org.springframework.boot.autoconfigure.security.servlet.PathRequest.toH2Console;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity(debug = true)
+@RequiredArgsConstructor
 // debug 달면 log가 더 잘뜬다. 운영환경에선 사용하면 안된다.
 public class SecurityConfig {
+
+    private final ObjectMapper objectMapper;
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -56,12 +73,12 @@ public class SecurityConfig {
                 //위의 방법을 사용하면 무한 페이지 리다이렉트 될 수 있다...?
                     .requestMatchers("/auth/login").permitAll()
                     .requestMatchers("/auth/signup").permitAll()
-//                .requestMatchers("/user").hasRole("USER")
-                .requestMatchers("/user").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/user").hasRole("USER")
+//                .requestMatchers("/user").hasAnyRole("USER", "ADMIN")
                 // 관리자는 사용자 페이지도 접근 가능해야 하기 때문에 hasAnyRole을 통해 여러 권한을 줄 수 있다.
-//                .requestMatchers("/admin").hasRole("ADMIN")
+                .requestMatchers("/admin").hasRole("ADMIN")
                 //이건 일반적인 경우 사용
-                .requestMatchers("/admin").access(new WebExpressionAuthorizationManager("hasRole('ADMIN') AND hasAuthority('WRITE')"))
+//                .requestMatchers("/admin").access(new WebExpressionAuthorizationManager("hasRole('ADMIN') AND hasAuthority('WRITE')"))
                 //역할과 권한을 둘 다 조건으로 줘야 할 때
                 //hasRole과 hasAuthority가 있다.
                 //여기서는 ROLE를 붙일 필요는 굳이 없다.
@@ -78,7 +95,14 @@ public class SecurityConfig {
                     .passwordParameter("password")
                     .defaultSuccessUrl("/")
                 //성공한 뒤 이동하는 페이지
+                    .failureHandler(new LoginFailHandler(objectMapper))
+                //로그인 실패시 발생하는 핸들러
                 .and()
+                .exceptionHandling(e -> {
+                    e.accessDeniedHandler(new Http403Handler(objectMapper));
+                    e.authenticationEntryPoint(new Http401Handler(objectMapper));
+                            //로그인이 필요한 페이지인데 로그인이 안된 상태에서 접근 했을 때
+                })
                 .rememberMe(new Customizer<RememberMeConfigurer<HttpSecurity>>() {
                                 @Override
                                 public void customize(RememberMeConfigurer<HttpSecurity> rm) {
