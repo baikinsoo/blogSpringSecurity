@@ -21,10 +21,15 @@ Content-Type: application/json
 #}
 
 POST http://localhost:8080/auth/login
-Content-Type: application/x-www-form-urlencoded
+#Content-Type: application/x-www-form-urlencoded
 # 폼으로 해당 경로로 POST 요청을 Spring에서 알아서 전달한다.
+Content-Type: application/json
 
-username=saymay10@naver.com&password=1234&remember=1
+//username=saymay10@naver.com&password=1234&remember=1
+{
+  "email": "saymay10@naver.com",
+  "password": "1234"
+}
 
 ### 메인 페이지
 
